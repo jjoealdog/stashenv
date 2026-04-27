@@ -40,8 +40,12 @@ def export_all_cmd(project: str, dest: str):
     dest_path = Path(dest)
     try:
         paths = export_all_profiles(project, dest_path)
+        if not paths:
+            click.echo(f"No profiles found for project '{project}'.")
+            return
         for p in paths:
             click.echo(f"Exported {p.name}")
+        click.echo(f"Total: {len(paths)} profile(s) exported.")
     except (FileNotFoundError, ValueError) as exc:
         click.echo(str(exc), err=True)
         raise SystemExit(1)
