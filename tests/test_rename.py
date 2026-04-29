@@ -58,3 +58,10 @@ def test_rename_does_not_leave_old_file(store):
     rename_profile(store, "alpha", "beta")
     from stashenv.store import _profile_path
     assert not _profile_path(store, "alpha").exists()
+
+
+def test_rename_profile_same_name_raises(store):
+    """Renaming a profile to its own name should raise ProfileAlreadyExistsError."""
+    save_profile(store, "dev", b"KEY=1", "pass")
+    with pytest.raises(ProfileAlreadyExistsError):
+        rename_profile(store, "dev", "dev")
