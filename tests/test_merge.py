@@ -68,3 +68,14 @@ def test_merge_existing_dest_succeeds_with_overwrite(store: Path) -> None:
     merge_profiles(store, "base", "override", "merged", "pass", "pass", "pass", overwrite=True)
     text = load_profile(store, "merged", "pass")
     assert text  # just verify it loads
+
+
+def test_merge_dest_does_not_affect_source_profiles(store: Path) -> None:
+    """Merging should not modify the base or override source profiles."""
+    base_before = load_profile(store, "base", "pass")
+    override_before = load_profile(store, "override", "pass")
+
+    merge_profiles(store, "base", "override", "merged", "pass", "pass", "pass")
+
+    assert load_profile(store, "base", "pass") == base_before
+    assert load_profile(store, "override", "pass") == override_before
