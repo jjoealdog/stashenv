@@ -74,3 +74,15 @@ def test_lint_issue_has_line_number():
     result = lint_text("dev", "FIRST=ok\nBAD LINE\nSECOND=ok\n")
     error = next(i for i in result.issues if i.severity == "error")
     assert error.line == 2
+
+
+def test_lint_all_profiles_mixed_results(store):
+    """Verify lint_all_profiles captures issues from profiles that have errors."""
+    save_profile(store, "good", GOOD_ENV, "pw")
+    save_profile(store, "bad", BAD_ENV, "pw")
+    results = lint_all_profiles(store, "pw")
+    assert len(results) == 2
+    good_result = next(r for r in results if r.profile == "good")
+    bad_result = next(r for r in results if r.profile == "bad")
+    assert good_result.ok is True
+    assert bad_result.ok is False
