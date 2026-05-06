@@ -30,6 +30,9 @@ def archive_profiles(
     available = list_profiles(store_dir)
     names = profiles if profiles is not None else available
 
+    if not names:
+        raise ArchiveError("No profiles to archive.")
+
     missing = [n for n in names if n not in available]
     if missing:
         raise ProfileNotFoundError(
@@ -68,10 +71,16 @@ def restore_profiles(
     restored: list[str] = []
 
     with tarfile.open(src, "r:gz") as tar:
-        manifest_member = tar.getmember("manifest.json")
+        try:
+            manifest_member = tar.getmember("manifest.json")
+        except KeyError:
+            raise ArchiveError(f"Archive is missing manifest.json: {src}")
+
         f = tar.extractfile(manifest_member)
         meta = json.loads(f.read())
-        names = meta["profiles"]
+        names = meta.get("profiles")
+        if not isinstance(names, list):
+            raise ArchiveError("manifest.json has invalid or missing 'profiles' key.")
 
         for name in names:
             dest_path = _profile_path(store_dir, name)
@@ -79,7 +88,12 @@ def restore_profiles(
                 raise ArchiveError(
                     f"Profile '{name}' already exists. Use overwrite=True to replace."
                 )
-            member = tar.getmember(f"profiles/{name}.env.enc")
+            try:
+                member = tar.getmember(f"profiles/{name}.env.enc")
+            except KeyError:
+                raise ArchiveError(
+                    f"Archive is missing expected file for profile '{name}'."
+                )
             data = tar.extractfile(member).read()
             dest_path.write_bytes(data)
             restored.append(name)
