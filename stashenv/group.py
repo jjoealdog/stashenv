@@ -78,3 +78,18 @@ def delete_group(store_dir: Path, group: str) -> None:
         raise GroupNotFoundError(group)
     del data[group]
     _save_groups(store_dir, data)
+
+
+def rename_group(store_dir: Path, old_name: str, new_name: str) -> None:
+    """Rename a group from *old_name* to *new_name*.
+
+    Raises GroupNotFoundError if *old_name* does not exist.
+    Raises ValueError if *new_name* already exists.
+    """
+    data = _load_groups(store_dir)
+    if old_name not in data:
+        raise GroupNotFoundError(old_name)
+    if new_name in data:
+        raise ValueError(f"Group '{new_name}' already exists")
+    data[new_name] = data.pop(old_name)
+    _save_groups(store_dir, data)
