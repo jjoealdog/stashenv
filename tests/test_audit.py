@@ -55,3 +55,12 @@ def test_clear_log_removes_file(store_dir):
 def test_clear_log_no_error_when_missing(store_dir):
     # Should not raise even if log doesn't exist
     clear_log(store_dir)
+
+
+def test_read_events_returns_most_recent_last(store_dir):
+    """Events should be ordered oldest-first (append order) when read back."""
+    profiles = ["alpha", "beta", "gamma"]
+    for profile in profiles:
+        record_event(store_dir, "load", profile)
+    events = read_events(store_dir)
+    assert [e["profile"] for e in events] == profiles
