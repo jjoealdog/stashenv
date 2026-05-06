@@ -36,14 +36,30 @@ def import_profile(bundle_path: Path, dest_project: str | None = None) -> tuple[
 
     If dest_project is provided it overrides the project name stored in the bundle.
     Returns (project, profile) tuple of the imported entry.
+
+    Raises:
+        FileNotFoundError: If the bundle file does not exist.
+        ValueError: If the bundle file is missing required fields or contains invalid data.
     """
     if not bundle_path.exists():
         raise FileNotFoundError(f"Bundle file not found: {bundle_path}")
 
-    bundle = json.loads(bundle_path.read_text())
+    try:
+        bundle = json.loads(bundle_path.read_text())
+    except json.JSONDecodeError as e:
+        raise ValueError(f"Bundle file is not valid JSON: {bundle_path}") from e
+
+    missing = [field for field in ("project", "profile", "data") if field not in bundle]
+    if missing:
+        raise ValueError(f"Bundle file is missing required fields: {', '.join(missing)}")
+
     project = dest_project or bundle["project"]
     profile = bundle["profile"]
-    raw = base64.b64decode(bundle["data"])
+
+    try:
+        raw = base64.b64decode(bundle["data"])
+    except Exception as e:
+        raise ValueError(f"Bundle data field contains invalid base64 content") from e
 
     out_path = _profile_path(project, profile)
     out_path.parent.mkdir(parents=True, exist_ok=True)
