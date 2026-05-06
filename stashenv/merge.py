@@ -68,6 +68,35 @@ def merge_profiles(
     return len(merged)
 
 
+def diff_profiles(
+    store_dir: Path,
+    base_name: str,
+    override_name: str,
+    base_password: str,
+    override_password: str,
+) -> dict[str, tuple[str | None, str | None]]:
+    """Return keys that differ between two profiles.
+
+    Returns a dict mapping each differing key to a ``(base_value, override_value)``
+    tuple. A value of ``None`` means the key is absent in that profile.
+    """
+    existing = list_profiles(store_dir)
+    if base_name not in existing:
+        raise ProfileNotFoundError(f"Profile '{base_name}' not found")
+    if override_name not in existing:
+        raise ProfileNotFoundError(f"Profile '{override_name}' not found")
+
+    base_vars = _parse(load_profile(store_dir, base_name, base_password))
+    override_vars = _parse(load_profile(store_dir, override_name, override_password))
+
+    all_keys = base_vars.keys() | override_vars.keys()
+    return {
+        key: (base_vars.get(key), override_vars.get(key))
+        for key in all_keys
+        if base_vars.get(key) != override_vars.get(key)
+    }
+
+
 def _parse(env_text: str) -> dict[str, str]:
     result: dict[str, str] = {}
     for line in env_text.splitlines():
