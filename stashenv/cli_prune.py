@@ -12,6 +12,21 @@ def prune_group():
     """Remove stale or expired profiles."""
 
 
+def _echo_dry_run_results(found, label):
+    """Print dry-run preview results to stdout.
+
+    Args:
+        found: List of profile names that would be pruned.
+        label: Message to display when no profiles are found.
+    """
+    if not found:
+        click.echo(label)
+    else:
+        click.echo("Would prune:")
+        for name in found:
+            click.echo(f"  {name}")
+
+
 @prune_group.command("expired")
 @click.option("--dry-run", is_flag=True, default=False, help="Show what would be removed without deleting.")
 @click.pass_context
@@ -28,12 +43,7 @@ def expired_cmd(ctx, dry_run):
         sd = store_dir or _store_dir()
         now = datetime.now(tz=timezone.utc)
         found = [n for n in list_profiles(sd) if (e := get_expiry(sd, n)) and e <= now]
-        if not found:
-            click.echo("No expired profiles found.")
-        else:
-            click.echo("Would prune:")
-            for name in found:
-                click.echo(f"  {name}")
+        _echo_dry_run_results(found, "No expired profiles found.")
         return
 
     result = prune_expired(**kwargs)
@@ -61,12 +71,7 @@ def old_cmd(ctx, days, dry_run):
         sd = store_dir or _store_dir()
         cutoff = datetime.now(tz=timezone.utc) - timedelta(days=days)
         found = [n for n in list_profiles(sd) if (m := _profile_mtime(sd, n)) and m < cutoff]
-        if not found:
-            click.echo(f"No profiles older than {days} day(s) found.")
-        else:
-            click.echo("Would prune:")
-            for name in found:
-                click.echo(f"  {name}")
+        _echo_dry_run_results(found, f"No profiles older than {days} day(s) found.")
         return
 
     result = prune_older_than(days=days, **kwargs)
